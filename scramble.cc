@@ -1,0 +1,174 @@
+/*
+  SCRAMBLE
+  EMMERSON ZHAIME
+  DATA STRUCTURES (CPSCI 111)
+  LAB NUMBER 6
+
+  This program gets a scramble board of characters with dimensions
+  less than or equal 10. It also takes in a given number of words
+  and search the words in the board. If it finds a word that it
+  searches,it prints the word, the position where the first character
+  in the word lie in the board and the directions that one has to move
+  to find each of the other letters in the word. If it doesn't find the
+  word, it prints "not found".
+ */
+#include "list.h"
+#include <iostream>
+
+using namespace std;
+
+char board[12][12];
+void initialize_board()
+{
+/*
+  Puts an asterisk at each position in the 12 by 12 board of
+  of characters.
+ */
+
+for(size_t i = 0; i < 12; i++){
+  for(size_t j = 0; j < 12; j++)
+    board[i][j] = '*';
+ }
+}
+
+void print_solution(size_t row, size_t col, list & directions)
+{
+  /*
+   Prints the position that a found word begins at and the 
+   directions that one has to take to get all the other characters
+   in the word.
+   */
+
+  cout << row << "," << col << endl;
+  for(size_t i = 0; i < directions.size(); i+=2){
+    if(i != 0)
+      cout << ' ';
+    if(directions.get(i) == 1)
+      cout << 'S';
+    else if(directions.get(i) == -1)
+      cout << 'N';
+    if(directions.get(i+1) == 1)
+      cout << 'E';
+    else if(directions.get(i+1) == -1)
+      cout << 'W';
+  }
+  cout << endl;
+} 
+bool visited(int row, int col, list & used_pos)
+{
+  /*
+    checks whether a character at a given position
+    on the board has already been used to construct
+    the current word. Returns true when the character
+    has already been used and false when the character
+    hasn't been used yet.
+   */
+
+  for(size_t i = 0; i < used_pos.size(); i+= 2){
+    if(used_pos.get(i) == row and used_pos.get(i+1) == col)
+      return true;
+  }
+  return false;   
+}
+
+
+bool find_here( int row, int  col, string word, size_t index, list directions,
+		list & positions, int dim)
+{
+  /* 
+     This functions searches for the given word in the board and returns true
+     when it finds it
+ */
+
+  bool found = false;
+  if (index == word.length()){ 
+    // When the passed index is equal to the length of the word then the word
+    // has been found so it is printed out
+    print_solution(positions.get(0)-directions.get(0),
+		   positions.get(1)-directions.get(1), directions);
+    return true;
+  } 
+  for(int dr = -1; dr  <= 1; dr++){
+    for(int dc = -1; dc <= 1; dc++){
+      if(dr == 0 && dc == 0)
+	continue;
+      if(board[row + dr][col + dc] == word[index] and
+	 !(visited(row + dr, col + dc, positions))){
+	// When an appropriate character is found, its direction is added to
+	// the list of directions and its position is added to a list of used 
+	// positions.
+	  directions.add(dr, directions.size());
+	  directions.add(dc, directions.size());
+	  positions.add(row + dr, positions.size());
+	  positions.add(col + dc, positions.size());
+	  if(find_here(row + dr, col + dc, word, index + 1, directions,
+		       positions, dim))
+	    found = true;
+	  // When the directions and positions list are passed to the recursive 
+	  // function the most recent directions and positions are removed from
+	  // the list to avoid the directions being included in other posssible
+	  // paths of the word.
+	  directions.remove_at(directions.size()-1);
+	  directions.remove_at(directions.size()-1);
+	  positions.remove_at(positions.size()-1);
+	  positions.remove_at(positions.size()-1);
+      }
+    }
+  }
+  return found;
+}
+
+ void search_word(string word, int dim)
+{
+  /*
+   Takes in a word and the dimensions of the board then searches for the
+   position of first character in the word from the board. It then calls
+   the find_here function which prints out the word when it is found or
+   prints out "not found", when the word is not found.
+   */
+  bool b = false;
+  cout << word << endl; 
+  for(int i = 1; i <= dim; i++){
+    for(int j = 1; j <= dim; j++){
+      if (board[i][j] == word[0]){
+	list directions;
+	list positions;
+	if(find_here(i, j, word, 1, directions, positions, dim)){
+	   b = true;
+	}
+      }
+    }	
+  }
+  if (!b)
+   cout << "not found" << endl;
+}
+
+int main()
+{
+  // Takes in the dimension of the board, the board and the number of words to
+  // be searched from the input file. It then inputs one word at a time and
+  // searches for it in the board by calling search_word function.
+  initialize_board();
+  int dim;
+  cin >> dim;
+  cin.ignore();
+  for (int i = 1; i <= dim; i++){
+    for(int j = 1; j <= dim; j++){
+      char c;
+      cin >> c;
+      board[i][j] = c;
+    }
+    cin.ignore();
+  }
+  size_t num_of_words;
+  cin >> num_of_words;
+  cin.ignore();
+  for(size_t i = 0; i < num_of_words ; i++){
+    string word;
+    cin >> word;
+    search_word(word, dim);
+    if(i != num_of_words -1)
+      cout << endl;
+    cin.ignore();
+  }
+}
